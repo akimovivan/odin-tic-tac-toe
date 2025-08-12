@@ -1,7 +1,8 @@
 "use strict";
 
-const playingField = function () {
-        let fieldObject = [
+const gameObject = function () {
+        let fieldObj;
+        let playingField = [
                 [" ", " ", " "],
                 [" ", " ", " "],
                 [" ", " ", " "],
@@ -12,18 +13,21 @@ const playingField = function () {
         const checkGameState = () => {
                 for (let i = 0; i < 3; i++) {
                         for (let j = 0; j < 3; j++) {
-                                if (fieldObject == " ") {
+                                if (playingField[i][j] == " ") {
                                         return true;
                                 }
                         }
                 }
                 return false;
         }
-        const move = (x, y) => {
-                if (fieldObject != " ") {
+
+        const move = (id) => {
+                const { i, j } = translateIdToIndexes(id);
+                if (playingField[i][j] != " ") {
                         return "illegal move";
                 }
-                fieldObject[x][y] = currentMove;
+
+                playingField[i][j] = currentMove;
                 currentMove = (currentMove == "x") ? "o" : "x";
 
                 let victor = checkVictory();
@@ -32,40 +36,93 @@ const playingField = function () {
                         return victor;
                 };
 
-                if (!checkGameState) {
-                        return draw;
+                if (!checkGameState()) {
+                        return "draw";
                 }
+
+                renderField()
         };
 
         const checkVictory = () => {
                 for (let i = 0; i < 3; i++) {
-                        let checkValue = fieldObject[i][0]
+                        let checkValue = playingField[i][0];
                         for (let j = 0; j < 3; j++) {
-                                if (checkValue != fieldObject[i][j]) {
-                                        continue;
+                                if (checkValue != playingField[i][j]) {
+                                        break;
                                 }
-                                if (j == 2) return checkValue;
+                                if (j == 2 && checkValue != " ") return checkValue;
                         }
-
                 }
+
                 for (let j = 0; j < 3; j++) {
-                        let checkValue = fieldObject[0][j]
+                        let checkValue = playingField[0][j];
                         for (let i = 0; i < 3; i++) {
-                                if (checkValue != fieldObject[i][j]) {
-                                        continue;
+                                if (checkValue != playingField[i][j]) {
+                                        break;
                                 }
-                                if (j == 2) return checkValue;
+                                if (i == 2 && checkValue != " ") return checkValue;
                         }
+                }
 
+                if (playingField[0][0] != " " &&
+                        playingField[0][0] == playingField[1][1] &&
+                        playingField[1][1] == playingField[2][2]) {
+                        return playingField[0][0];
                 }
-                if (fieldObject[0][0] == fieldObject[1][1] == fieldObject[2][2]) {
-                        return fieldObject[0][0];
+
+                if (playingField[2][0] != " " &&
+                        playingField[2][0] == playingField[1][1] &&
+                        playingField[1][1] == playingField[0][2]) {
+                        return playingField[2][0];
                 }
-                if (fieldObject[2][0] == fieldObject[1][1] == fieldObject[0][2]) {
-                        return fieldObject[2][0];
-                }
+
                 return " ";
         };
-        const printField = () => console.table(fieldObject);
-        return { move, checkVictory, printField };
+
+        const createField = (el) => {
+                for (let i = 0; i < 9; i++) {
+                        const newDiv = document.createElement("div");
+                        newDiv.className = "cell";
+                        newDiv.dataset.id = i;
+                        el.appendChild(newDiv);
+                }
+                fieldObj = el;
+        }
+        const renderField = () => {
+                const children = fieldObj.children;
+                for (const child of children) {
+                        const childId = child.dataset.id;
+                        let { i, j } = translateIdToIndexes(childId);
+                        child.innerText = playingField[i][j];
+                }
+        }
+        const translateIdToIndexes = (id) => {
+                const i = Math.floor(id / 3);
+                const j = id - 3 * i;
+                return { i, j }
+        }
+
+        const printField = () => { console.table(playingField) };
+        return { move, checkVictory, renderField, createField, printField };
 }()
+
+window.addEventListener('DOMContentLoaded', function () {
+        const fieldObj = document.getElementById("field");
+        gameObject.createField(fieldObj);
+
+        fieldObj.addEventListener("click", (e) => {
+                if (e.target.dataset.id === "undefined") {
+                        console.error("Help me");
+                }
+                const state = gameObject.move(e.target.dataset.id);
+
+                if (state == "illegal move") {
+                        alert("illegal move");
+                } else if (state == "draw") {
+                        alert("draw");
+                } else if (state == "x" || state == "y") {
+                        alert(`${state} has won`);
+                        console.log("sas");
+                }
+        })
+});
